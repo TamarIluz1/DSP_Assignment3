@@ -1,18 +1,25 @@
 package com.bgu.dirt.util;
 
-import org.tartarus.snowball.ext.EnglishStemmer;
+import opennlp.tools.stemmer.PorterStemmer;
 
 /**
- * Stemming utility using Porter Stemmer (Snowball).
+ * Stemming utility using Porter Stemmer (via OpenNLP).
  */
 public class Stemmer {
-    private static final EnglishStemmer stemmer = new EnglishStemmer();
+    private static final PorterStemmer stemmer = new PorterStemmer();
     
     public static String stem(String word) {
-        synchronized (stemmer) {
-            stemmer.setCurrent(word.toLowerCase());
-            stemmer.stem();
-            return stemmer.getCurrent();
+        if (word == null || word.isEmpty()) {
+            return word;
         }
+        return stemmer.stem(word.toLowerCase());
+    }
+    
+    // Test method
+    public static void main(String[] args) {
+        System.out.println(stem("involves"));   // involv
+        System.out.println(stem("involve"));    // involv
+        System.out.println(stem("running"));    // run
+        System.out.println(stem("manufactures")); // manufactur
     }
 }

@@ -9,6 +9,9 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import com.bgu.dirt.model.Triple;
 import com.bgu.dirt.parser.*;
 
+import java.io.IOException;
+import java.util.List;  // ← ADD THIS
+
 public class Job1_ExtractPaths {
     
     public static class Mapper extends org.apache.hadoop.mapreduce.Mapper<LongWritable, Text, Text, LongWritable> {
@@ -22,7 +25,7 @@ public class Job1_ExtractPaths {
         }
         
         @Override
-        protected void map(LongWritable key, Text value, Context context) throws java.io.IOException, InterruptedException {
+        protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             String line = value.toString().trim();
             if (line.isEmpty()) return;
             
@@ -30,19 +33,15 @@ public class Job1_ExtractPaths {
             BiarcParser.ParsedBiarc biarc = BiarcParser.parse(line);
             if (biarc == null) return;
             
-            // Extract paths
-            java.util.Listm.bgu.dirt.model.Path> paths = extractor.extractPaths(biarc);
+            // Extract paths - NOW THIS LINE SHOULD WORK
+            List<com.bgu.dirt.model.Path> paths = extractor.extractPaths(biarc);
             
             // For each path, emit triples (path, SlotX, word_x) and (path, SlotY, word_y)
             for (com.bgu.dirt.model.Path path : paths) {
-                // Emit SlotX triple
-                String tripleKeyX = path.getPathStr() + "\tSlotX\t" + value.toString(); // placeholder
+                // TODO: You'll need to emit actual triples with slot fillers
+                // This is a placeholder
+                String tripleKeyX = path.getPathStr() + "\tSlotX\tplaceholder";
                 outKey.set(tripleKeyX);
-                context.write(outKey, outVal);
-                
-                // Emit SlotY triple
-                String tripleKeyY = path.getPathStr() + "\tSlotY\t" + value.toString(); // placeholder
-                outKey.set(tripleKeyY);
                 context.write(outKey, outVal);
             }
         }
