@@ -1,13 +1,22 @@
 package com.dsp.dirt.parse;
 
-/**
- * TODO: adapt fields to your dataset (Biarcs / syntactic n-grams).
- * Keep whatever you need for path extraction: tokens, POS, dependencies, frequency, etc.
- */
-public class BiarcsRecord {
-    public final long count; // frequency for this record in the corpus
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
-    public BiarcsRecord(long count) {
-        this.count = count;
+public class BiarcsRecord {
+    public final String headWord;             // field 0
+    public final List<BiarcsToken> tokens;    // parsed fragment
+    public final long totalCount;             // field 2
+    public final Map<Integer, Long> byYear;   // optional: year -> count (can be empty)
+
+    public BiarcsRecord(String headWord, List<BiarcsToken> tokens, long totalCount, Map<Integer, Long> byYear) {
+        this.headWord = headWord == null ? "" : headWord;
+        this.tokens = tokens == null ? Collections.emptyList() : tokens;
+        this.totalCount = totalCount;
+        this.byYear = byYear == null ? Collections.emptyMap() : byYear;
     }
+
+    public boolean isValid() { return totalCount > 0 && !tokens.isEmpty(); }
+
 }

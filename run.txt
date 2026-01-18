@@ -1,0 +1,40 @@
+aws emr create-cluster `
+  --region us-east-1 `
+  --name "ass3-dirt-small-10files" `
+  --release-label emr-6.15.0 `
+  --applications Name=Hadoop `
+  --use-default-roles `
+  --log-uri s3://dsp-idan-tamar-3/emr-logs/ `
+  --ec2-attributes KeyName=vockey `
+  --instance-type m4.large `
+  --instance-count 3 `
+  --auto-terminate `
+  --steps file://steps.json
+
+
+yarn application -list
+
+
+aws emr list-steps --region us-east-1 --cluster-id <CLUSTER_ID>
+aws emr describe-step --region us-east-1 --cluster-id <CLUSTER_ID> --step-id <STEP_ID>
+aws emr describe-cluster --region us-east-1 --cluster-id <CLUSTER_ID> --query "Cluster.Status.State"
+
+
+18-37 = 22 min
+
+
+mkdir results\B_mi -Force | Out-Null
+
+aws s3 cp s3://dsp-idan-tamar-3/ass3/output_small/B_mi/ results\B_mi\ `
+  --recursive --exclude "*" --include "part-r-*"
+
+
+Push-Location results\B_mi
+cmd /c "copy /b part-r-* ..\mi.tsv"
+Pop-Location
+
+Select-String -Path results\mi.tsv -Pattern "(^| )ar( |$)" | Measure-Object
+Select-String -Path results\mi.tsv -Pattern "(^| )be( |$)" | Measure-Object
+
+java -cp target\dirt-assignment3-1.0.0.jar com.dsp.dirt.local.EvalPairs `
+  results\mi.tsv results\positive-preds.txt results\negative-preds.txt results\out_scores.tsv

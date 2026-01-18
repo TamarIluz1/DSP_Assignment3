@@ -1,0 +1,13 @@
+[
+  {
+    "Name": "DIRT small",
+    "ActionOnFailure": "TERMINATE_CLUSTER",
+    "Type": "CUSTOM_JAR",
+    "Jar": "s3://dsp-idan-tamar-3/jars/dirt-assignment3-1.0.0.jar",
+    "MainClass": "com.dsp.dirt.Driver",
+    "Args": [
+      "s3://dsp-ass3-first10-biarcs/",
+      "s3://dsp-idan-tamar-3/ass3/output_small/"
+    ]
+  }
+]
