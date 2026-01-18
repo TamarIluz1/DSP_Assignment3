@@ -3,3 +3,7 @@ target/
 *.iml
 .DS_Store
 out/
+results/B_mi/part-r-00000
+results/B_mi/part-r-00001
+results/mi.tsv
+reports/figures_old/

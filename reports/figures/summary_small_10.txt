@@ -1,0 +1,14 @@
+Counts: pos=2481, neg=99, total=2580
+Zero scores: 2554/2580 (98.99%)
+Pos with score>0: 26/2481 (1.05%)
+Neg with score>0: 0/99 (0.00%)
+
+Best-by-sweep:
+  threshold=0.0
+  TP=2481, FP=99, TN=0, FN=0
+  Precision=0.961628, Recall=1.000000, F1=0.980439
+
+Diagnostic threshold (score>0):
+  threshold=1e-9
+  TP=26, FP=0, TN=99, FN=2455
+  Precision=1.000000, Recall=0.010480, F1=0.020742
