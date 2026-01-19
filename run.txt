@@ -38,3 +38,68 @@ Select-String -Path results\mi.tsv -Pattern "(^| )be( |$)" | Measure-Object
 
 java -cp target\dirt-assignment3-1.0.0.jar com.dsp.dirt.local.EvalPairs `
   results\mi.tsv results\positive-preds.txt results\negative-preds.txt results\out_scores.tsv
+
+=======================
+aws s3 cp s3://dsp-idan-tamar-3/ass3/output_20/B_mi/ results\20\B_mi\ `
+  --recursive --exclude "*" --include "part-r-*"
+
+Push-Location results\20\B_mi
+cmd /c "copy /b part-r-* ..\mi.tsv"
+Pop-Location
+
+
+java -cp target\dirt-assignment3-1.0.0.jar com.dsp.dirt.local.EvalPairs `
+  results\20\mi.tsv results\positive-preds.txt results\negative-preds.txt results\out_scores.tsv
+
+
+aws emr create-cluster `
+  --region us-east-1 `
+  --name "ass3-dirt-small-10files" `
+  --release-label emr-6.15.0 `
+  --applications Name=Hadoop `
+  --use-default-roles `
+  --log-uri s3://dsp-idan-tamar-3/emr-logs/ `
+  --ec2-attributes KeyName=vockey `
+  --instance-type m4.large `
+  --instance-count 3 `
+  --auto-terminate `
+  --steps file://steps_small_10.json
+
+
+
+ $BUCKET = "<name of the public bucket>" 
+ $PREFIX = "input_90-98"   
+ New-Item -ItemType Directory -Force -Path biarcs_tmp | Out-Null
+ Set-Location biarcs_tmp     
+  for ($n = 80; $n -le 89; $n++) {
+>>   $i = "{0:D2}" -f $n
+>>   Write-Host "=== $i ==="
+>> 
+>>   $url  = "http://commondatastorage.googleapis.com/books/syntactic-ngrams/eng/biarcs.$i-of-99.gz"
+>>   $file = "biarcs.$i-of-99.gz"
+>> 
+>>   Invoke-WebRequest -Uri $url -OutFile $file
+>> 
+>>   Get-Item $file | Select-Object Name, Length
+>> 
+>>   aws s3 cp $file "s3://$BUCKET/$PREFIX/"
+>>   Remove-Item $file
+>> }
+
+
+aws emr create-cluster `
+  --region us-east-1 `
+  --name "ass3-dirt-large-100files" `
+  --release-label emr-6.15.0 `
+  --applications Name=Hadoop `
+  --use-default-roles `
+  --log-uri s3://dsp-idan-tamar-3/emr-logs-100/ `
+  --ec2-attributes KeyName=vockey `
+  --instance-type m4.large `
+  --instance-count 9 `
+  --auto-terminate `
+  --steps file://steps_large_100.json
+
+  yarn application -list
+  yarn application -list
+

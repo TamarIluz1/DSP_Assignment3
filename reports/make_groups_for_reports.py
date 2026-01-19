@@ -104,8 +104,10 @@ def main():
     ap.add_argument("--scores", required=True, help="TSV: label p1 p2 score")
     ap.add_argument("--tag", default="run", help="tag for filenames")
     ap.add_argument("--out_dir", default="figures", help="where to write pngs")
-    ap.add_argument("--grid", type=int, default=200,
+    ap.add_argument("--grid", type=int, default=0,
                     help="If >0, also evaluate a uniform grid of thresholds (for smoother curves)")
+    ap.add_argument("--round", type=int, default=6,
+                help="Round scores to N decimals before threshold sweep (reduces #unique thresholds).")
     args = ap.parse_args()
 
     rows = read_scores_tsv(args.scores)
@@ -114,6 +116,7 @@ def main():
 
     labels_scores = []
     for (lab, _, __, s) in rows:
+        s = round(s, args.round)
         y = 1 if lab == "pos" else 0
         labels_scores.append((y, s))
 
@@ -124,25 +127,27 @@ def main():
     scores = [s for _, s in labels_scores]
     uniq_scores = sorted(set(scores))
 
-    # Threshold candidates:
-    # - include 0 explicitly (important when many zeros)
-    # - include every unique score
-    # - include a tiny epsilon above 0 (diagnostic)
-    thr_set = set(uniq_scores)
-    thr_set.add(0.0)
-    thr_set.add(1e-9)
+    # --- Threshold candidates (LIMITED) ---
+    scores_sorted = sorted(scores)
+    thr_set = {0.0, 1e-9, max(scores_sorted)}
 
-    # Optional: add grid thresholds between min..max for smoother plots
-    if args.grid and args.grid > 0:
-        mn = min(scores)
-        mx = max(scores)
-        if mx > mn:
-            for i in range(args.grid + 1):
-                t = mn + (mx - mn) * (i / args.grid)
-                thr_set.add(t)
+    # add quantiles to get a small, representative sweep
+    qs = [0.001, 0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99, 0.999]
+    n = len(scores_sorted)
+    for q in qs:
+        idx = int(q * (n - 1))
+        thr_set.add(scores_sorted[idx])
 
     thresholds = sorted(thr_set)
+    print("DEBUG: #thresholds_used =", len(thresholds))
 
+    
+    print("DEBUG: grid =", args.grid)
+    print("DEBUG: #rows =", len(rows))
+    print("DEBUG: #unique_scores =", len(uniq_scores))
+    print("DEBUG: min,max =", min(scores), max(scores))
+    thresholds = sorted(thr_set)
+    
     # Evaluate
     f1_points = []
     pr_points = []
@@ -171,7 +176,8 @@ def main():
     plt.figure()
     xs = [t for (t, _) in f1_points]
     ys = [v for (_, v) in f1_points]
-    plt.plot(xs, ys)
+    plt.scatter(xs, ys, s=25)
+    plt.plot(xs, ys, linewidth=1)
     plt.title(f"F1 vs threshold ({args.tag})")
     plt.xlabel("threshold")
     plt.ylabel("F1")

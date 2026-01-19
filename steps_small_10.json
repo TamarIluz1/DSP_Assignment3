@@ -1,0 +1,25 @@
+[
+  {
+    "Name": "DIRT small 10 (counts+MI)",
+    "ActionOnFailure": "TERMINATE_CLUSTER",
+    "Type": "CUSTOM_JAR",
+    "Jar": "s3://dsp-idan-tamar-3/ass3/jars/dirt-assignment3-1.0.0.jar",
+    "MainClass": "com.dsp.dirt.Driver",
+    "Args": [
+      "s3://dsp-ass3-first10-biarcs/",
+      "s3://dsp-idan-tamar-3/ass3/output_small_10/"
+    ]
+  },
+  {
+    "Name": "EvalPairs (out_scores.tsv)",
+    "ActionOnFailure": "TERMINATE_CLUSTER",
+    "Type": "CUSTOM_JAR",
+    "Jar": "s3://dsp-idan-tamar-3/ass3/jars/dirt-assignment3-1.0.0-eval.jar",
+    "MainClass": "com.dsp.dirt.local.EvalPairs",
+    "Args": [
+      "s3://dsp-idan-tamar-3/ass3/output_small_10/B_mi/",
+      "s3://dsp-idan-tamar-3/ass3/eval/test_pairs.tsv",
+      "s3://dsp-idan-tamar-3/ass3/output_small_10/out_scores.tsv"
+    ]
+  }
+]

@@ -21,40 +21,50 @@ public class Driver {
         args = stripLeadingMainClassArg(args);
 
         if (args.length < 2) {
-            System.err.println("Usage: Driver <input> <outBase>");
+            System.err.println("Usage: Driver <input1> [input2 ... inputN] <outBase>");
             System.exit(1);
         }
 
         Configuration conf = new Configuration();
-        Path in = new Path(args[0]);
-        Path outBase = new Path(args[1]);
+        conf.setBoolean("mapreduce.map.output.compress", true);
+        conf.set("mapreduce.map.output.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
+
+        // last arg is outBase; all previous args are inputs
+        int nInputs = args.length - 1;
+        Path[] inputs = new Path[nInputs];
+        for (int i = 0; i < nInputs; i++) {
+            inputs[i] = new Path(args[i]);
+        }
+        Path outBase = new Path(args[args.length - 1]);
+
+        System.out.println("Driver starting.");
+        System.out.println("Inputs:");
+        for (Path p : inputs) System.out.println("  - " + p);
+        System.out.println("Output base: " + outBase);
 
         Path outA = new Path(outBase, "A_counts");
         Path outB = new Path(outBase, "B_mi");
 
-        // Optional but recommended: delete existing outputs to avoid “File already exists”.
         deleteIfExists(conf, outA);
         deleteIfExists(conf, outB);
 
         // --- Job A: counts ---
-        Job j1 = TripleCountsJob.build(conf, in, outA);
+        Job j1 = TripleCountsJob.build(conf, inputs, outA);
         if (!j1.waitForCompletion(true)) System.exit(2);
 
-        // Read |*,*,*| total over all (p,slot,w) triples from the counter
         long totalT = j1.getCounters()
-                       .findCounter(COUNTER_GROUP, COUNTER_TOTAL_T)
-                       .getValue();
+                .findCounter(COUNTER_GROUP, COUNTER_TOTAL_T)
+                .getValue();
 
         if (totalT <= 0) {
             System.err.println("ERROR: TOTAL_T counter is <= 0. Cannot compute MI correctly.");
             System.exit(4);
         }
 
-        // IMPORTANT: inject this into the Configuration used by Job B
         conf.setLong(CONF_TOTAL_T, totalT);
-
         System.out.println("TOTAL_T (|*,*,*|) = " + totalT);
 
+        deleteIfExists(conf, outB);
         // --- Job B: MI ---
         Job j2 = ComputeMIJob.build(conf, outA, outB);
         if (!j2.waitForCompletion(true)) System.exit(3);

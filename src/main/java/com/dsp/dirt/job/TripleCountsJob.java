@@ -72,7 +72,19 @@ public class TripleCountsJob {
         }
     }
 
-    public static class SumR extends Reducer<Text, LongWritable, Text, LongWritable> {
+    /** Combiner: sums only (no counters!). */
+    public static class SumCombiner extends Reducer<Text, LongWritable, Text, LongWritable> {
+        @Override
+        protected void reduce(Text key, Iterable<LongWritable> vals, Context ctx)
+                throws IOException, InterruptedException {
+            long sum = 0L;
+            for (LongWritable v : vals) sum += v.get();
+            ctx.write(key, new LongWritable(sum));
+        }
+    }
+
+    /** Reducer: sums AND increments TOTAL_T for final reduced T-keys only. */
+    public static class SumReducer extends Reducer<Text, LongWritable, Text, LongWritable> {
         @Override
         protected void reduce(Text key, Iterable<LongWritable> vals, Context ctx)
                 throws IOException, InterruptedException {
@@ -80,20 +92,19 @@ public class TripleCountsJob {
             for (LongWritable v : vals) sum += v.get();
             ctx.write(key, new LongWritable(sum));
 
-            // Increment TOTAL_T only for reduced (final) T keys
             if (key.toString().startsWith(T + "\t")) {
                 ctx.getCounter(COUNTER_GROUP, COUNTER_TOTAL_T).increment(sum);
             }
         }
     }
 
-    public static Job build(Configuration conf, Path in, Path out) throws IOException {
+    public static Job build(Configuration conf, Path[] inputs, Path out) throws IOException {
         Job job = Job.getInstance(conf, "A_triple_counts");
         job.setJarByClass(TripleCountsJob.class);
 
         job.setMapperClass(M.class);
-        job.setCombinerClass(SumR.class);
-        job.setReducerClass(SumR.class);
+        job.setCombinerClass(SumCombiner.class);
+        job.setReducerClass(SumReducer.class);
 
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);
@@ -103,7 +114,9 @@ public class TripleCountsJob {
         job.setInputFormatClass(TextInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
 
-        TextInputFormat.addInputPath(job, in);
+        for (Path in : inputs) {
+            TextInputFormat.addInputPath(job, in);
+        }
         TextOutputFormat.setOutputPath(job, out);
         return job;
     }
